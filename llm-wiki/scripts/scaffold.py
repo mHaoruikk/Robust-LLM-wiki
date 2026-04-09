@@ -200,3 +200,4 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit(1)
     scaffold(sys.argv[1], sys.argv[2])
+

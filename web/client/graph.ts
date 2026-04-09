@@ -60,12 +60,12 @@ export function renderGraph(
   defs
     .append("filter")
     .attr("id", "graph-node-glow")
-    .attr("x", "-150%")
-    .attr("y", "-150%")
-    .attr("width", "400%")
-    .attr("height", "400%")
+    .attr("x", "-50%")
+    .attr("y", "-50%")
+    .attr("width", "200%")
+    .attr("height", "200%")
     .append("feGaussianBlur")
-    .attr("stdDeviation", 6);
+    .attr("stdDeviation", 2);
 
   const vignette = defs
     .append("radialGradient")
@@ -179,7 +179,7 @@ export function renderGraph(
   nodeInner
     .append("circle")
     .attr("class", "node-halo")
-    .attr("r", (d) => radius(d) * 2.8)
+    .attr("r", (d) => radius(d) * 1.3)
     .attr("filter", "url(#graph-node-glow)");
 
   // Main circle

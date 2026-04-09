@@ -83,3 +83,4 @@ This is a one-time manual operation; the skill doesn't automate it.
 - **Long rationale**: put design decisions and rationale in `CLAUDE.md` "Notes for the LLM", not in the log.
 - **Secrets / credentials**: never.
 - **Audit file bodies**: only the audit ID and a one-liner. The audit file itself already has the full content.
+

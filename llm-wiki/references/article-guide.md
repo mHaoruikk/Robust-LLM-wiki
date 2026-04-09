@@ -252,3 +252,4 @@ When processing an open audit that targets an article you're editing:
 4. Add a line to the `# Resolution` section of the audit file explaining what changed.
 5. Move the audit file to `audit/resolved/`.
 6. Log the resolution under the current day's `log/YYYYMMDD.md`.
+

@@ -943,7 +943,7 @@ article h3:hover .header-anchor { opacity: 0.7; }
 
 /* Node halo — blurred circle behind the node, colored by group */
 #graph-svg .node-halo {
-  opacity: 0.4;
+  opacity: 0.2;
   pointer-events: none;
 }
 #graph-svg .node.group-concepts  .node-halo { fill: var(--grp-concepts); }

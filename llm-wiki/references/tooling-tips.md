@@ -141,3 +141,4 @@ Keep large files (PDFs >10 MB, raw images at full resolution, video, model weigh
 ## Interactive HTML outputs
 
 For complex analyses, the LLM can generate interactive HTML with JavaScript and save to `outputs/`. These can be opened in a browser or embedded in Obsidian with the HTML plugin.
+

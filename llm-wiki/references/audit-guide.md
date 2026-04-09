@@ -133,3 +133,4 @@ For `rejected` audits: explain **why** — most often "out of scope per CLAUDE.m
 - **`plugins/obsidian-audit/`** writes audit files from inside Obsidian on selection.
 - **`web/`** writes audit files from the local web viewer on selection.
 - **`audit-shared/`** — TypeScript library implementing the schema, anchor algorithm, id generator, and YAML (de)serialization used by the plugin and the web server.
+

@@ -305,3 +305,4 @@ Quick grep across history: `grep -rh "^## \[" log/ | tail -20`.
 - `references/log-guide.md` — The `log/` folder convention
 - `references/audit-guide.md` — Audit file format, anchor strategy, processing workflow
 - `references/tooling-tips.md` — Obsidian setup, Web Clipper, qmd, plugin + web installation
+
