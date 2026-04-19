@@ -6,16 +6,17 @@ Usage:
     python3 lint_wiki.py <wiki-root>
 
 Example:
-    python3 lint_wiki.py ~/wikis/ai-research
+    python3 lint_wiki.py ~/wikis/causal-inference
 
 Checks:
   1. Dead wikilinks — [[Target]] where Target.md doesn't exist
   2. Orphan pages — wiki pages with no inbound links
   3. Missing index entries — wiki pages not listed in wiki/index.md
   4. Unlinked concepts — terms mentioned 3+ times but lacking their own page
-  5. log/ shape — every file matches YYYYMMDD.md and has the right H1
-  6. audit/ shape — every audit/*.md parses as a valid AuditEntry
-  7. Audit targets — every open audit's `target` file must exist
+  5. PCMT type integrity — every wiki page has a valid `type` in frontmatter
+  6. log/ shape — every file matches YYYYMMDD.md and has the right H1
+  7. audit/ shape — every audit/*.md parses as a valid AuditEntry
+  8. Audit targets — every open audit's `target` file must exist
 
 Exit codes:
   0 — no issues found
@@ -32,6 +33,19 @@ from pathlib import Path
 WIKILINK_RE = re.compile(r"\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]")
 LOG_FILENAME_RE = re.compile(r"^(\d{4})(\d{2})(\d{2})\.md$")
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
+
+# Valid `type` values for PCMT wiki pages
+VALID_PAGE_TYPES = {"problem", "concept", "method", "theory", "entity", "summary"}
+
+# Map from wiki subdirectory to expected `type` value (for directory-type consistency)
+PCMT_DIR_TO_TYPE = {
+    "problems": "problem",
+    "concepts": "concept",
+    "methods": "method",
+    "theory": "theory",
+    "entities": "entity",
+    "summaries": "summary",
+}
 
 # Required audit frontmatter fields
 AUDIT_REQUIRED_FIELDS = {
@@ -194,7 +208,47 @@ def lint(root: str) -> int:
     else:
         print("✅ No frequently-linked missing pages")
 
-    # ── Pass 5: log/ shape ───────────────────────────────────────────────────
+    # ── Pass 5: PCMT type integrity ─────────────────────────────────────────
+    type_issues: list[str] = []
+    for md_file in all_wiki_files:
+        if md_file == index_path:
+            continue
+        # Determine expected type from the first path component under wiki/
+        rel_parts = md_file.relative_to(wiki_path).parts
+        if not rel_parts:
+            continue
+        top_dir = rel_parts[0]
+        expected_type = PCMT_DIR_TO_TYPE.get(top_dir)
+        if expected_type is None:
+            continue  # unknown top-level dir — skip, not our business
+        text = md_file.read_text(encoding="utf-8")
+        fm = parse_frontmatter(text)
+        rel = md_file.relative_to(root_path)
+        if fm is None:
+            type_issues.append(f"   {rel} — missing YAML frontmatter")
+            continue
+        page_type = fm.get("type", "").strip()
+        if not page_type:
+            type_issues.append(f"   {rel} — frontmatter missing 'type' field")
+        elif page_type not in VALID_PAGE_TYPES:
+            type_issues.append(
+                f"   {rel} — unknown type '{page_type}' "
+                f"(expected one of: {', '.join(sorted(VALID_PAGE_TYPES))})"
+            )
+        elif page_type != expected_type:
+            type_issues.append(
+                f"   {rel} — type '{page_type}' doesn't match directory "
+                f"'{top_dir}/' (expected '{expected_type}')"
+            )
+    if type_issues:
+        print(f"\n🔴 PCMT type integrity issues ({len(type_issues)}):")
+        for s in type_issues:
+            print(s)
+        issues += len(type_issues)
+    else:
+        print("✅ PCMT type integrity OK")
+
+    # ── Pass 6: log/ shape ──────────────────────────────────────────────────
     if log_path.exists() and log_path.is_dir():
         log_issues: list[str] = []
         for p in sorted(log_path.iterdir()):
@@ -221,7 +275,7 @@ def lint(root: str) -> int:
     else:
         print("⚠️  log/ directory not found — skipping log shape check")
 
-    # ── Pass 6: audit/ shape ─────────────────────────────────────────────────
+    # ── Pass 7: audit/ shape ─────────────────────────────────────────────────
     audit_targets_to_check: list[tuple[str, str]] = []  # (audit_id, target)
     if audit_path.exists() and audit_path.is_dir():
         audit_files = [
@@ -267,7 +321,7 @@ def lint(root: str) -> int:
     else:
         print("⚠️  audit/ directory not found — skipping audit shape check")
 
-    # ── Pass 7: audit targets exist ──────────────────────────────────────────
+    # ── Pass 8: audit targets exist ──────────────────────────────────────────
     missing_targets: list[tuple[str, str]] = []
     for audit_id, target in audit_targets_to_check:
         target_path = root_path / target

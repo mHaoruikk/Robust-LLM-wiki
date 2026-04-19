@@ -18,3 +18,5 @@ web/dist/
 # OS
 .DS_Store
 obsidian-releases/
+
+/.claude/*

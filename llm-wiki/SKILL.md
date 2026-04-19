@@ -12,7 +12,8 @@ description: >-
   against the wiki and filing durable answers back, (5) running lint
   passes for dead links / orphan pages / coverage gaps / audit shape,
   (6) processing human feedback from the audit/ directory and applying
-  corrections. Not for general note-taking, daily journals, or non-wiki
+  corrections, (7) brainstorming new research directions by traversing the
+  knowledge graph. Not for general note-taking, daily journals, or non-wiki
   Obsidian use.
 ---
 
@@ -28,7 +29,7 @@ Instead of RAG (re-retrieving raw docs on every query), the LLM **compiles** raw
 - **You** own: sourcing raw material, asking good questions, steering direction, filing feedback on anything the AI got wrong.
 - **LLM** owns: all writing, cross-referencing, filing, bookkeeping, and acting on your feedback.
 
-The wiki is a living artifact with **five operations** — `compile`, `ingest`, `query`, `lint`, `audit`. Every session starts by reading `CLAUDE.md` and `wiki/index.md`.
+The wiki is a living artifact with **six operations** — `compile`, `ingest`, `query`, `lint`, `audit`, `brainstorm`. Every session starts by reading `CLAUDE.md` and `wiki/index.md`.
 
 ## Directory layout
 
@@ -41,21 +42,60 @@ The wiki is a living artifact with **five operations** — `compile`, `ingest`, 
 ├── audit/             ← Human feedback inbox (one file per comment)
 │   ├── 20260409-143022-claude-code-size.md
 │   └── resolved/      ← Processed feedback, archived with resolution notes
-├── raw/               ← Immutable source documents (LLM reads, never writes)
+├── raw/               ← Immutable source documents (read-only after incoming-paper normalization)
+│   ├── incoming/      ← Drop converted markdown here before running ingest
 │   ├── articles/
-│   ├── papers/
+│   ├── papers/        ← Converted PDF→markdown files (one per paper)
 │   ├── notes/
 │   └── refs/          ← Pointer files for large binaries kept outside raw/
 ├── wiki/              ← LLM-generated knowledge (LLM writes, you read)
 │   ├── index.md       ← Master catalog — every page, structured by category
-│   ├── concepts/      ← Concept/topic pages (split into subfolders when >1200 words)
-│   ├── entities/      ← People, tools, papers, organizations
+│   ├── problems/      ← Research questions and challenge domains
+│   ├── concepts/      ← Named domain objects, quantities, phenomena, assumptions
+│   ├── methods/       ← Estimation approaches, algorithms, procedures
+│   ├── theory/        ← Mathematical foundations, theorems, bounds, proof techniques
+│   ├── entities/      ← People, tools, datasets, organizations
 │   └── summaries/     ← Per-source summary pages
 └── outputs/
-    └── queries/       ← Query answers (promote durable ones to wiki/)
+    ├── queries/       ← Query answers (promote durable ones to wiki/)
+    └── brainstorm/    ← Brainstorming session outputs
 ```
 
 `CLAUDE.md` is the **schema file** — the single most important configuration. It tells the LLM the wiki's scope, naming conventions, current article list, open questions, and research gaps. Read `references/schema-guide.md` for what to put in it. Read it at the start of every session.
+
+## Research ontology (PCMT)
+
+For research wikis, the `wiki/` directory is organized by **semantic type**, not by positional hierarchy. There are four primary page types — collectively called **PCMT**:
+
+| Type | Directory | Grammar role | What belongs here |
+|------|-----------|-------------|-------------------|
+| **Problem** | `wiki/problems/` | Questions — "How do we…?" | Research questions and challenge domains that multiple papers address |
+| **Concept** | `wiki/concepts/` | Nouns — named objects/quantities | Domain objects, quantities, phenomena, and assumptions a field reasons about |
+| **Method** | `wiki/methods/` | Verbs — what you DO | Estimation approaches, algorithms, and procedures proposed to solve problems |
+| **Theory** | `wiki/theory/` | Machinery — what makes methods work | Theorems, bounds, inequalities, and proof techniques used as mathematical tools |
+
+Within each type, pages are organized by **domain subdirectory** (e.g., `concepts/causal-inference/`, `methods/statistics/`). Domain dirs are namespaces — they prevent collisions across 1000+ papers and make cross-domain traversal legible.
+
+**Quick classification test:**
+1. Is it a research question that many papers contribute to? → `problems/`
+2. Is it a named quantity, object, or phenomenon the domain reasons about? → `concepts/`
+3. Is it a procedure, estimator, or algorithm applied to solve a problem? → `methods/`
+4. Is it a theorem, bound, inequality, or proof technique used as a tool? → `theory/`
+5. Does it span two types? → Put it in its primary role; add a "Related" link to the secondary.
+
+**Example — Athey et al. "The Surrogate Index" (2019):**
+```
+wiki/problems/causal-inference/long-term-treatment-effects.md
+wiki/concepts/causal-inference/surrogate-index.md
+wiki/concepts/causal-inference/surrogacy-assumption.md
+wiki/methods/statistics/cross-fitting.md
+wiki/theory/statistics/efficient-influence-function.md
+wiki/theory/statistics/semiparametric-efficiency-bound.md
+wiki/summaries/athey-surrogate-index-2019.md     ← links to all of the above
+wiki/entities/Susan-Athey.md
+```
+
+See `references/ontology-guide.md` for the full PCMT decision rules and more examples.
 
 ## Core principles
 
@@ -63,27 +103,14 @@ Four rules govern everything below. If a future instruction contradicts one, fla
 
 ### 1. Divide and conquer
 
-A single concept page should **never** try to cover a complex topic end-to-end. Target: **400–1200 words per page**. When a topic would blow past that:
+A single page should **never** try to cover a complex topic end-to-end. Target: **400–1200 words per page**. When a topic would blow past that:
 
-- Create a subfolder: `wiki/concepts/<topic>/`
-- Put a short index page at `wiki/concepts/<topic>/index.md` — definition, list of sub-pages, one-line summaries
-- Put each aspect in its own file: `wiki/concepts/<topic>/<aspect>.md`
+- Create a subfolder: `wiki/<type>/<domain>/<topic>/`
+- Put a short index page at `wiki/<type>/<domain>/<topic>/index.md` — definition, list of sub-pages, one-line summaries
+- Put each aspect in its own file: `wiki/<type>/<domain>/<topic>/<aspect>.md`
 - In `wiki/index.md`, show the hierarchy via indented bullets
 
-Example layout (from a real wiki):
-```
-wiki/tech/claude-code/
-├── index.md                         (overview + links to sub-pages)
-├── Claude_Code_Architecture.md
-├── Claude_Code_Agent_Framework.md
-├── Claude_Code_Bridge_System.md
-├── Claude_Code_Query_Engine.md
-├── Claude_Code_Skills_Plugins.md
-├── Claude_Code_State_Management.md
-└── Claude_Code_Tool_System.md
-```
-
-One fat file covering all seven aspects would be unreadable and unlinkable. Seven focused files + an index page give you navigation, selective reading, clean backlinks, and small audit targets.
+One fat file covering all aspects would be unreadable and unlinkable. Focused files + an index page give you navigation, selective reading, clean backlinks, and small audit targets.
 
 ### 2. Mermaid for diagrams, KaTeX for formulas
 
@@ -91,7 +118,7 @@ One fat file covering all seven aspects would be unreadable and unlinkable. Seve
   ````
   ```mermaid
   flowchart LR
-      A[raw/article.md] --> B[summary]
+      A[raw/paper.md] --> B[summary]
       B --> C[concept page]
       C --> D[index.md]
   ```
@@ -102,16 +129,22 @@ Both render in the web viewer (server-side KaTeX, client-side mermaid) and in Ob
 
 ### 3. Raw file policy
 
-Small text-based sources (md, txt, small pdfs, small images) → copy into `raw/<subfolder>/`.
+Treat `raw/` as immutable source custody.
 
-Large binaries (videos, model weights, installers, datasets, large PDFs >10 MB) → **do not copy**. Instead:
+- Once a file exists under `raw/`, the agent must **not** edit, rewrite, annotate, enrich, or otherwise modify it in place.
+- The **only** allowed agent mutation under `raw/` is academic paper pre-processing:
+  - create `raw/papers/<slug>.md` from a file in `raw/incoming/`
+  - then delete the original file from `raw/incoming/`
+- Web articles, notes, and refs should already be placed in the correct `raw/` subfolder by the user or an external tool before `ingest` runs. `ingest` reads them; it does not rewrite them.
+
+Large binaries (videos, model weights, large PDFs >10 MB) → **do not copy**. Instead:
 
 - Create a pointer file at `raw/refs/<slug>.md` with:
   ```yaml
   ---
   kind: ref
-  external_path: /Volumes/external/models/llama-3-70b/
-  size: ~140 GB
+  external_path: /path/to/file.pdf
+  size: ~50 MB
   ---
   ```
   followed by a short description of what it is and why it matters to this wiki.
@@ -131,9 +164,9 @@ See `references/audit-guide.md` for the full file format and processing workflow
 
 ---
 
-## The five operations
+## The six operations
 
-Every action on the wiki is one of these five. Each appends an entry to the current day's log file (`log/YYYYMMDD.md`).
+Every action on the wiki is one of these six. Each appends an entry to the current day's log file (`log/YYYYMMDD.md`).
 
 ### 1. `compile`
 
@@ -143,39 +176,69 @@ Every action on the wiki is one of these five. Each appends an entry to the curr
 
 **Steps**:
 1. Read `CLAUDE.md`, `wiki/index.md`, and every file in the target subtree.
-2. For each page over ~1200 words: plan a split into `concepts/<topic>/` with an index + sub-pages. Confirm the plan with the user before writing.
+2. For each page over ~1200 words: plan a split into `<type>/<domain>/<topic>/` with an index + sub-pages. Confirm the plan with the user before writing.
 3. For each pair of near-duplicate pages: propose a merge. Confirm, then rewrite.
-4. Regenerate `wiki/index.md` so every page is listed exactly once.
+4. Regenerate `wiki/index.md` so every page is listed exactly once under its PCMT section.
 5. Log: `## [HH:MM] compile | <what you did — files touched, splits, merges>`
 
 ### 2. `ingest`
 
-Add a new source. **One source typically touches 5–15 wiki pages.**
+Add a new source. **One paper typically touches 5–15 wiki pages.**
 
-**Steps**:
-1. Save source to the right subfolder:
+For **academic papers**, if the converted markdown is in `raw/incoming/`, run the pre-processing step first, then continue with the downstream ingest steps.
+
+**Paper pre-processing** (for files in `raw/incoming/`):
+1. Read the incoming markdown file.
+2. Extract metadata (title, authors, year, venue, domains, slug) — see `references/paper-guide.md` for the slug convention.
+3. Write `raw/papers/<slug>.md` with a YAML front matter header (paper_id, title, authors, venue, year, domains, source_type).
+4. Delete the original file from `raw/incoming/`.
+
+This pre-processing rename is the **only** allowed agent write inside `raw/`. After the file is created under `raw/papers/`, it is immutable.
+
+Invocation forms:
+- `"ingest all the incoming papers"` — process every `.md` file in `raw/incoming/`
+- `"ingest paper <filename> in the incoming folder"` — process a specific file
+
+**Ingest steps**:
+1. Locate the source in the right subfolder:
    - web article → `raw/articles/<slug>.md`
-   - paper → `raw/papers/<slug>.md` (extracted text for big PDFs)
+   - academic paper → `raw/papers/<slug>.md` (from pre-processing above)
    - note → `raw/notes/<slug>.md`
    - large binary → `raw/refs/<slug>.md` pointer file (see raw file policy)
+   
+   `ingest` reads these files as-is. Do not rewrite files already under `raw/`.
 2. Read the source in full.
-3. Create `wiki/summaries/<slug>.md` (200–400 words — key takeaways, not a rewrite; see `references/article-guide.md`).
-4. Create or update relevant concept pages in `wiki/concepts/`. Respect divide-and-conquer: if a concept page would exceed 1200 words, split instead of cramming.
-5. Create or update entity pages in `wiki/entities/` for any new people / tools / papers / organizations referenced.
-6. Update `wiki/index.md` so the new pages appear under the right category.
-7. Log: `## [HH:MM] ingest | <slug> — <one-line description> (touched N pages)`
+3. Create `wiki/summaries/<slug>.md` using the paper summary template (200–400 words — key takeaways, structured PCMT links; see `references/article-guide.md` and `references/paper-guide.md`).
+4. **PCMT decision pass** — for each paper, identify candidate changes:
+   - `wiki/problems/<domain>/` — the research question(s) the paper addresses
+   - `wiki/concepts/<domain>/` — new domain objects or quantities the paper introduces
+   - `wiki/methods/<domain>/` — reusable estimation approaches or algorithms worth promoting
+   - `wiki/theory/<domain>/` — mathematical tools the paper relies on
+   
+   Respect divide-and-conquer: if any page would exceed 1200 words, split instead of cramming.
+5. **Approval gate for new PCMT pages** — before creating any new `problems/`, `concepts/`, `methods/`, or `theory/` page, present the proposal to the user and get approval. Include:
+   - proposed page title and type
+   - target domain subdirectory
+   - one-line justification grounded in the source
+   
+   Updating an existing PCMT page does **not** require approval. Summary pages and entity pages do **not** require approval.
+6. After approval, write the approved new PCMT pages and update the relevant existing PCMT pages.
+7. Create or update entity pages in `wiki/entities/` for any new people / tools / organizations.
+8. Update `wiki/index.md` so the new pages appear under the right PCMT section.
+9. Append an entry to `CLAUDE.md` `papers:` registry (paper slug, title, authors, venue, year, domains, status).
+10. Log: `## [HH:MM] ingest | <slug> — <one-line description> (touched N pages)`
 
 ### 3. `query`
 
 Answer a question **grounded in the wiki**, not general knowledge.
 
 **Steps**:
-1. Read `wiki/index.md`. Scan for relevant pages by category.
+1. Read `wiki/index.md`. Scan for relevant pages by PCMT category.
 2. Read the identified pages in full; follow one level of wikilinks.
 3. If the wiki doesn't have enough material, say so and suggest what to ingest next instead of making something up.
 4. Synthesize the answer, citing pages inline with `[[Page Name]]`.
 5. Save to `outputs/queries/<YYYY-MM-DD>-<question-slug>.md`.
-6. If the answer is durable (a comparison, analysis, or new synthesis) → promote a cleaned-up version to `wiki/concepts/`, add to `index.md`.
+6. If the answer is durable (a comparison, analysis, or new synthesis) → promote a cleaned-up version to the appropriate `wiki/<type>/` dir, add to `index.md`.
 7. Log: `## [HH:MM] query | <question-slug>` (and a separate `## [HH:MM] promote | ...` line if promoted).
 
 ### 4. `lint`
@@ -191,6 +254,7 @@ The script reports:
 - **Orphan pages** — pages with no inbound wikilinks
 - **Missing index entries** — pages not listed in `wiki/index.md`
 - **Frequently-linked missing pages** — `[[X]]` referenced 3+ times but no page
+- **PCMT type integrity** — every wiki page has a valid `type` in frontmatter and it matches its directory
 - **log/ shape** — stray files or wrong filenames in `log/`
 - **audit/ shape** — malformed YAML frontmatter in `audit/*.md`
 - **Audit target resolution** — every open audit's `target` file must exist
@@ -226,6 +290,31 @@ Process human feedback from `audit/`.
 
 See `references/audit-guide.md` for the full audit file format.
 
+### 6. `brainstorm`
+
+Traverse the wiki graph to generate cross-domain research ideas.
+
+**Invocation** (tell the LLM):
+```
+brainstorm from [[concepts/causal-inference/surrogate-index]]
+brainstorm from paper athey-surrogate-index-2019
+brainstorm from problem: long-term treatment effects
+```
+
+**Steps**:
+1. Locate the seed in the wiki (summary, concept, problem, method, or theory page).
+2. Collect the full local PCMT neighborhood: what problems does this address? what concepts does it use? what methods does it apply? what theory does it rely on?
+3. For each node in the neighborhood, find **cross-domain siblings** — nodes in other domains that occupy the same PCMT slot. These are the analogical bridges.
+4. Generate "inspiration sparks" by asking: "Method X from domain A solves problem Y. In domain B, problem Z has a similar structure — could method X (or an adaptation) apply?"
+5. Save to `outputs/brainstorm/<YYYY-MM-DD>-<seed-slug>.md` with:
+   - **Problem space map** — the seed and its immediate PCMT neighbors
+   - **Cross-domain analogies** — specific bridges found, with wikilinks
+   - **Candidate research directions** — concrete "what if" questions, ordered by novelty × plausibility
+   - **Gaps to fill** — what the wiki is missing to evaluate these directions (drives future ingest)
+6. Log: `## [HH:MM] brainstorm | <seed-slug> — <one-line summary of main analogy found>`
+
+The power of `brainstorm` scales with the wiki's size — the more papers ingested, the richer the cross-domain graph. A wiki with 50 papers is useful; a wiki with 500 papers surfaces non-obvious connections.
+
 ---
 
 ## Tooling
@@ -236,7 +325,7 @@ See `references/audit-guide.md` for the full audit file format.
 | **`plugins/obsidian-audit/`** | Obsidian plugin — select text → add feedback → writes to `audit/` |
 | **`web/`** | Local Node.js server — preview the wiki with mermaid/math rendered; select → feedback → `audit/` |
 | `scripts/scaffold.py` | Bootstrap a new wiki directory tree |
-| `scripts/lint_wiki.py` | Seven-pass health check |
+| `scripts/lint_wiki.py` | Eight-pass health check |
 | `scripts/audit_review.py` | Group open/resolved audits by target file |
 | [qmd](https://github.com/tobi/qmd) | Optional local semantic search (useful at >100 pages) |
 
@@ -248,14 +337,16 @@ The Obsidian plugin and the web viewer both write audit files in the **same form
 python3 scripts/scaffold.py <wiki-root> "<Topic Title>"
 ```
 
-Creates the full tree (including `log/<today>.md`, `audit/`, `audit/resolved/`), a blank `CLAUDE.md` based on the new template, and a blank `wiki/index.md` with the recommended category layout.
+Creates the full tree (including `log/<today>.md`, `audit/`, `audit/resolved/`, `raw/incoming/`, `wiki/problems/`, `wiki/methods/`, `wiki/theory/`, `outputs/brainstorm/`), a blank `CLAUDE.md` based on the new template, and a blank `wiki/index.md` with the recommended PCMT category layout.
 
 After scaffolding:
 1. Fill in `CLAUDE.md` — define scope, naming conventions, initial research questions.
-2. Start ingesting sources.
-3. Ask questions to build up `outputs/queries/`; promote durable answers.
-4. Run `lint` periodically.
-5. Run `audit` whenever new feedback accumulates.
+2. Convert PDFs to markdown yourself and drop them into `raw/incoming/` as `.md` files.
+3. Run `ingest` for each converted paper to build up the wiki.
+4. Ask questions to build up `outputs/queries/`; promote durable answers.
+5. Run `lint` periodically.
+6. Run `audit` whenever new feedback accumulates.
+7. Run `brainstorm` when you want to generate new research directions.
 
 ## `wiki/index.md` format
 
@@ -267,23 +358,34 @@ The LLM rebuilds `index.md` on every compile and touches it on every ingest. For
 > One-sentence scope of the wiki.
 
 ## 🔖 Navigation
-- [[#Concepts]] · [[#Entities]] · [[#Summaries]] · [[#Open Questions]]
+- [[#Problems]] · [[#Concepts]] · [[#Methods]] · [[#Theory]] · [[#Entities]] · [[#Summaries]] · [[#Open Questions]]
 
-## Concepts
-### <Category A>
-- [[concepts/Foo]] — one-line summary
-- [[concepts/Bar/index|Bar]] — (folder-split) one-line summary
-    - [[concepts/Bar/aspect-1]] — ...
-    - [[concepts/Bar/aspect-2]] — ...
+## Problems
+### <Domain A>
+- [[problems/<domain-a>/<problem-slug>]] — one-line summary
 
-### <Category B>
+### <Domain B>
 - ...
 
+## Concepts
+### <Domain A>
+- [[concepts/<domain-a>/<concept-slug>]] — one-line summary
+- [[concepts/<domain-a>/<topic>/index|<topic>]] — (folder-split) one-line summary
+    - [[concepts/<domain-a>/<topic>/<aspect-1>]] — ...
+
+## Methods
+### <Domain A>
+- [[methods/<domain-a>/<method-slug>]] — one-line summary
+
+## Theory
+### <Domain A>
+- [[theory/<domain-a>/<tool-slug>]] — one-line summary
+
 ## Entities
-- [[entities/Andrej Karpathy]] — AI researcher, author of the llm-wiki pattern
+- [[entities/Susan Athey]] — econometrician, MIT; causal inference and market design
 
 ## Summaries (chronological)
-- 2026-04-09 — [[summaries/llm-wiki-gist]] — Karpathy's original Gist
+- 2019-01-15 — [[summaries/athey-surrogate-index-2019]] — The Surrogate Index
 
 ## Open Questions
 - Q1: ...
@@ -291,7 +393,7 @@ The LLM rebuilds `index.md` on every compile and touches it on every ingest. For
 
 Rules:
 - Every wiki page must appear exactly once in `index.md`. `lint` enforces this.
-- Folder-split concepts show hierarchy via indented bullets.
+- Folder-split pages show hierarchy via indented bullets.
 - `index.md` + `CLAUDE.md` together are what the AI reads at session start.
 
 ## `log/` format
@@ -300,22 +402,23 @@ See `references/log-guide.md` for full details. Minimum:
 
 - One file per day: `log/YYYYMMDD.md`
 - H1 = the date; H2 per entry with `## [HH:MM] <op> | <one-line description>`
-- Ops: `compile`, `ingest`, `query`, `lint`, `audit`, `promote`, `split`, `scaffold`
+- Ops: `compile`, `ingest`, `query`, `lint`, `audit`, `promote`, `split`, `scaffold`, `brainstorm`
 
 Quick grep across history: `grep -rh "^## \[" log/ | tail -20`.
 
 ## Use cases
 
+- **PhD research** — ingesting 100s of academic papers over months; the PCMT ontology keeps problems, methods, and mathematical tools cleanly separated; brainstorm traverses cross-domain connections for novel ideas
 - **Research deep-dive** — reading papers/articles on a topic over weeks; the wiki evolves with your understanding, and the audit trail keeps AI mistakes from silently accumulating
 - **Personal wiki** — journal entries, notes, ideas compiled into a personal encyclopedia; comment on anything you disagree with later, the AI corrects it
 - **Team knowledge base** — fed by Slack threads, meeting notes, docs; team members file corrections through the web viewer
-- **Reading companion** — filing each book chapter as you go; builds a rich companion wiki by the end
 
 ## References
 
+- `references/ontology-guide.md` — PCMT decision rules: when something is a concept vs. method vs. theory, worked examples
+- `references/paper-guide.md` — Academic paper naming convention, metadata extraction, the paper summary template
 - `references/schema-guide.md` — What to put in `CLAUDE.md`
 - `references/article-guide.md` — How to write good wiki articles (length, wikilinks, mermaid, math, divide-and-conquer)
 - `references/log-guide.md` — The `log/` folder convention
 - `references/audit-guide.md` — Audit file format, anchor strategy, processing workflow
 - `references/tooling-tips.md` — Obsidian setup, Web Clipper, qmd, plugin + web installation
-

@@ -16,11 +16,11 @@ The wiki's operation log is a **folder**, not a single file. One file per day, n
 ## [09:15] ingest | google-gemma-4-article
 - Source: raw/articles/google-gemma-4.md
 - Touched: 5 wiki pages
-  - summaries/google-gemma-4 (new)
-  - concepts/Gemma.md (updated)
-  - entities/Google.md (updated)
-  - entities/Gemma 4.md (new)
-  - index.md (updated)
+  - [[summaries/google-gemma-4]] (new)
+  - [[concepts/machine-learning/gemma-4]] (updated)
+  - [[entities/Google]] (updated)
+  - [[entities/Gemma 4]] (new)
+  - [[index]] (updated)
 
 ## [14:30] audit | resolved 20260409-143022-a1b2
 - Target: tech/Claude_Code.md
@@ -44,11 +44,12 @@ Rules:
 | `compile`  | Structural edits, splits, merges, index rebuild | `## [10:00] compile \| split Claude Code page into 7 sub-pages` |
 | `ingest`   | New source added to `raw/`, wiki updated | `## [09:15] ingest \| google-gemma-4-article` |
 | `query`    | Question answered, output file written | `## [11:20] query \| rag-vs-llm-wiki-tradeoffs` |
-| `promote`  | Output promoted to `wiki/concepts/` | `## [11:35] promote \| RAG vs LLM Wiki (from query)` |
+| `promote`  | Output promoted from `outputs/` into the appropriate `wiki/<type>/` directory | `## [11:35] promote \| RAG vs LLM Wiki (from query)` |
 | `lint`     | Lint run with issues fixed | `## [15:05] lint \| 2 dead links found, 2 fixed` |
 | `audit`    | Feedback applied and moved to `audit/resolved/` | `## [14:30] audit \| resolved 20260409-143022-a1b2` |
 | `split`    | A single page split into a folder | `## [10:00] split \| Claude Code → claude-code/` |
 | `scaffold` | Initial wiki setup | `## [08:00] scaffold \| Initialized Topic knowledge base` |
+| `brainstorm` | Research ideation output written to `outputs/brainstorm/` | `## [16:10] brainstorm \| surrogate-index — domain transfer ideas` |
 
 ## Quick grep
 
@@ -62,8 +63,8 @@ grep -rh "^## \[" log/ | sort | tail -20
 # All audit resolutions
 grep -rh "^## \[.*\] audit" log/
 
-# Activity on a specific file
-grep -rl "Claude_Code" log/
+# Activity on a specific page
+grep -rl "gemma-4" log/
 ```
 
 ## Migration from single-file `log.md`

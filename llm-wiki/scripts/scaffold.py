@@ -6,7 +6,7 @@ Usage:
     python3 scaffold.py <wiki-root> "<Topic Title>"
 
 Example:
-    python3 scaffold.py ~/wikis/ai-research "AI Research"
+    python3 scaffold.py ~/wikis/causal-inference "Causal Inference"
 
 Creates:
     <wiki-root>/
@@ -18,17 +18,22 @@ Creates:
     │   └── resolved/
     │       └── .gitkeep
     ├── raw/
+    │   ├── incoming/      (drop converted markdown here before running ingest)
     │   ├── articles/
     │   ├── papers/
     │   ├── notes/
     │   └── refs/
     ├── wiki/
-    │   ├── index.md       (category-structured catalog)
-    │   ├── concepts/
-    │   ├── entities/
-    │   └── summaries/
+    │   ├── index.md       (PCMT-structured catalog)
+    │   ├── problems/      (research questions)
+    │   ├── concepts/      (domain objects and quantities)
+    │   ├── methods/       (procedures and estimators)
+    │   ├── theory/        (mathematical foundations)
+    │   ├── entities/      (people, tools, datasets, organizations)
+    │   └── summaries/     (per-paper/source summary pages)
     └── outputs/
-        └── queries/
+        ├── queries/
+        └── brainstorm/
 """
 
 import os
@@ -43,14 +48,19 @@ def scaffold(root: str, title: str) -> None:
     now_hm = datetime.now().strftime("%H:%M")
 
     dirs = [
+        "raw/incoming",
         "raw/articles",
         "raw/papers",
         "raw/notes",
         "raw/refs",
+        "wiki/problems",
         "wiki/concepts",
+        "wiki/methods",
+        "wiki/theory",
         "wiki/entities",
         "wiki/summaries",
         "outputs/queries",
+        "outputs/brainstorm",
         "log",
         "audit",
         "audit/resolved",
@@ -80,31 +90,53 @@ What this wiki deliberately excludes:
 
 ## Operations
 
-This wiki follows the llm-wiki skill's five operations: `compile`, `ingest`, `query`, `lint`, `audit`.
+This wiki follows the llm-wiki skill's six operations: `compile`, `ingest`, `query`, `lint`, `audit`, `brainstorm`.
 Every operation appends an entry to `log/YYYYMMDD.md`.
 
-## Naming conventions
+## Naming conventions (PCMT ontology)
 
-- **Concept pages** (`wiki/concepts/`): Title Case noun phrases.
-- **Folder-split concepts** (`wiki/concepts/<topic>/`): used when a topic exceeds ~1200 words. Contains `index.md` + one file per aspect.
-- **Entity pages** (`wiki/entities/`): Proper names.
-- **Summary pages** (`wiki/summaries/`): kebab-case source slug.
+- **Problem pages** (`wiki/problems/<domain>/`): kebab-case noun phrases naming a research challenge.
+  E.g., `long-term-treatment-effects.md`
+- **Concept pages** (`wiki/concepts/<domain>/`): kebab-case noun phrases naming a domain object.
+  E.g., `surrogate-index.md`, `average-treatment-effect.md`
+- **Method pages** (`wiki/methods/<domain>/`): kebab-case noun phrases naming a procedure.
+  E.g., `doubly-robust-estimation.md`
+- **Theory pages** (`wiki/theory/<domain>/`): kebab-case noun phrases naming a mathematical tool.
+  E.g., `efficient-influence-function.md`
+- **Entity pages** (`wiki/entities/`): Proper names. E.g., "Susan Athey".
+- **Summary pages** (`wiki/summaries/`): paper slug `{{author}}-{{keyword}}-{{year}}`.
 
-All pages require YAML frontmatter: `title`, `type`, `created`, `updated`, `sources`, `tags`.
+**Domain subdirectories** are namespace prefixes within each PCMT type dir. Start with the most
+relevant domain name (e.g., `causal-inference`, `statistics`, `machine-learning`). Create new
+domains freely; no registration needed.
+
+**⚠️ Agent must ask user permission before creating any new problem/concept/method/theory page.**
+
+All pages require YAML frontmatter: `title`, `type`, `domain`, `created`, `updated`, `sources`, `tags`.
 
 ### Diagrams and formulas
-- All diagrams are **mermaid**. No ASCII art.
+- All structural diagrams are **mermaid**. No ASCII art.
 - All formulas are **KaTeX** (inline `$...$` or block `$$...$$`).
+- Method pages use mathematical equations, not mermaid flowcharts.
 
 ### Raw file policy
 - Small text sources → copy into `raw/<subfolder>/`.
-- Large binaries → create a pointer file at `raw/refs/<slug>.md` with `kind: ref` and `external_path` fields. Do not copy the binary.
+- PDFs → convert to markdown yourself, drop in `raw/incoming/`, then run ingest → `raw/papers/<slug>.md`.
+- Large binaries / PDFs >10 MB → create a pointer file at `raw/refs/<slug>.md` with `kind: ref`
+  and `external_path` fields. Do not copy the binary.
 
 ## Current articles
 
-*None yet — update this list after every compile.*
+### Problems
+*(none)*
 
 ### Concepts
+*(none)*
+
+### Methods
+*(none)*
+
+### Theory
 *(none)*
 
 ### Entities
@@ -112,6 +144,12 @@ All pages require YAML frontmatter: `title`, `type`, `created`, `updated`, `sour
 
 ### Summaries
 *(none)*
+
+## Papers registry
+
+```yaml
+papers: []
+```
 
 ## Open research questions
 
@@ -121,7 +159,7 @@ All pages require YAML frontmatter: `title`, `type`, `created`, `updated`, `sour
 ## Research gaps
 
 Sources to ingest:
-- [ ] <URL or paper title> — why it's relevant
+- [ ] <author-keyword-year or URL> — why it's relevant
 
 ## Audit backlog
 
@@ -143,7 +181,7 @@ Sources to ingest:
 ## [{now_hm}] scaffold | Initialized {title} knowledge base
 - Created directory tree (raw/, wiki/, log/, audit/, outputs/)
 - Created CLAUDE.md schema template
-- Created wiki/index.md category skeleton
+- Created wiki/index.md PCMT category skeleton
 """
     _write(root, f"log/{today_compact}.md", log_md)
     print(f"✓ Created log/{today_compact}.md")
@@ -154,9 +192,21 @@ Sources to ingest:
 > One-sentence scope of the wiki.
 
 ## 🔖 Navigation
-- [[#Concepts]] · [[#Entities]] · [[#Summaries]] · [[#Open Questions]]
+- [[#Problems]] · [[#Concepts]] · [[#Methods]] · [[#Theory]] · [[#Entities]] · [[#Summaries]] · [[#Open Questions]]
+
+## Problems
+
+*(none yet)*
 
 ## Concepts
+
+*(none yet)*
+
+## Methods
+
+*(none yet)*
+
+## Theory
 
 *(none yet)*
 
@@ -180,11 +230,12 @@ Sources to ingest:
 
 Next steps:
   1. Fill in CLAUDE.md — define scope and naming conventions
-  2. Add sources to raw/ (use Obsidian Web Clipper for web articles)
-  3. Run ingest: tell your LLM agent "ingest raw/<file>.md"
+  2. Convert PDFs to markdown yourself and drop them into raw/incoming/ as .md files
+  3. Tell your LLM agent "ingest all the incoming papers" (or name a specific file)
   4. Ask questions: "what does the wiki say about X?"
-  5. Run lint periodically:  python3 scripts/lint_wiki.py {root}
-  6. Process feedback:       python3 scripts/audit_review.py {root} --open
+  5. Brainstorm: "brainstorm from [[concepts/<domain>/<concept>]]"
+  6. Run lint periodically:  python3 scripts/lint_wiki.py {root}
+  7. Process feedback:       python3 scripts/audit_review.py {root} --open
 """)
 
 
@@ -200,4 +251,3 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit(1)
     scaffold(sys.argv[1], sys.argv[2])
-

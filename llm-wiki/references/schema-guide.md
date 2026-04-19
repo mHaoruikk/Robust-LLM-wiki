@@ -25,20 +25,33 @@ What this wiki deliberately excludes:
 
 ## Operations
 
-This wiki follows the llm-wiki skill's five operations: `compile`, `ingest`, `query`, `lint`, `audit`.
+This wiki follows the llm-wiki skill's six operations: `compile`, `ingest`, `query`, `lint`, `audit`, `brainstorm`.
 Every operation appends an entry to `log/YYYYMMDD.md`.
 
 ## Naming conventions
 
-### Pages
-- **Concept pages** (`wiki/concepts/`): Title Case noun phrases. E.g., "Market Making Strategy", not "market making" or "MarketMakingStrategy".
-- **Folder-split concepts** (`wiki/concepts/<topic>/`): used when a topic would exceed ~1200 words as a single page. Contains `index.md` + one file per aspect.
-- **Entity pages** (`wiki/entities/`): Proper names. E.g., "Andrej Karpathy", "Obsidian", "Avellaneda-Stoikov Model".
-- **Summary pages** (`wiki/summaries/`): kebab-case source slug. E.g., "karpathy-llm-wiki-gist".
+### Pages (PCMT ontology)
+- **Problem pages** (`wiki/problems/<domain>/`): kebab-case noun phrases naming a research challenge.
+  E.g., `long-term-treatment-effects.md`, `out-of-distribution-generalization.md`
+- **Concept pages** (`wiki/concepts/<domain>/`): kebab-case noun phrases naming a domain object.
+  E.g., `surrogate-index.md`, `average-treatment-effect.md`
+- **Method pages** (`wiki/methods/<domain>/`): kebab-case noun phrases naming a procedure.
+  E.g., `doubly-robust-estimation.md`, `cross-fitting.md`
+- **Theory pages** (`wiki/theory/<domain>/`): kebab-case noun phrases naming a mathematical tool.
+  E.g., `efficient-influence-function.md`, `semiparametric-efficiency-bound.md`
+- **Entity pages** (`wiki/entities/`): Proper names. E.g., "Susan Athey", "PyTorch".
+- **Summary pages** (`wiki/summaries/`): paper slug. E.g., `athey-surrogate-index-2019`.
+
+### Domain subdirectories
+`<domain>/` is a namespace prefix inside each PCMT type directory. It prevents naming
+collisions across many papers. Use existing domains when possible; create new ones freely.
+Suggested starting domains: `causal-inference`, `machine-learning`, `statistics`,
+`econometrics`, `optimization`, `information-theory`.
 
 ### Wikilinks
-- Always use `[[Page Title]]` — exact page title, case-sensitive.
-- For folder-split pages, link to the index: `[[concepts/Foo/index|Foo]]`.
+- Always use `[[Page Title]]` — exact page title, case-sensitive, or the relative path.
+- For PCMT pages use relative path form: `[[concepts/causal-inference/surrogate-index]]`.
+- For folder-split pages, link to the index: `[[concepts/causal-inference/foo/index|Foo]]`.
 - Link the first mention of every entity or concept. Do not link the same page more than twice per article.
 
 ### Frontmatter
@@ -46,7 +59,7 @@ Every wiki page has YAML frontmatter:
 ```yaml
 ---
 title: <Page Title>
-type: concept | entity | summary
+type: problem | concept | method | theory | entity | summary
 created: YYYY-MM-DD
 updated: YYYY-MM-DD
 sources: [list of raw/ slugs this page draws from]
@@ -60,20 +73,55 @@ tags: [relevant tags]
 
 ### Raw file policy
 - Small text sources → copy into `raw/<subfolder>/`.
-- Large binaries → create a pointer file at `raw/refs/<slug>.md` with `kind: ref` frontmatter and an `external_path` field. Do not copy the binary.
+- PDFs → convert to markdown yourself, drop in `raw/incoming/`, then run ingest → `raw/papers/<slug>.md`.
+- Large binaries / PDFs >10 MB → create a pointer file at `raw/refs/<slug>.md` with `kind: ref`
+  frontmatter and an `external_path` field. Do not copy the binary.
 
 ## Current articles
 
+### Problems
+*(none — update after each ingest)*
+
+#### <domain-a>
+- [[problems/<domain-a>/<slug>]] — one-line summary
+
 ### Concepts
-- [[<Concept Title>]] — one-line summary
-- [[concepts/<Topic>/index|<Topic>]] — (folder-split) one-line summary
-    - [[<Topic>/<aspect-1>]] — ...
+
+#### <domain-a>
+- [[concepts/<domain-a>/<slug>]] — one-line summary
+- [[concepts/<domain-a>/<topic>/index|<topic>]] — (folder-split) one-line summary
+    - [[concepts/<domain-a>/<topic>/<aspect>]] — ...
+
+### Methods
+
+#### <domain-a>
+- [[methods/<domain-a>/<slug>]] — one-line summary
+
+### Theory
+
+#### <domain-a>
+- [[theory/<domain-a>/<slug>]] — one-line summary
 
 ### Entities
-- [[<Entity Name>]] — one-line summary
+- [[entities/<Name>]] — one-line summary
 
 ### Summaries
-- [[summaries/<slug>]] — source title (date)
+- [[summaries/<slug>]] — source title (year)
+
+## Papers registry
+
+Track every ingested academic paper here. Update `status` as work progresses.
+
+```yaml
+papers:
+  - slug: <author>-<keyword>-<year>
+    title: "<Full Paper Title>"
+    authors: [LastName1, LastName2]
+    venue: <Journal / Conference / ArXiv>
+    year: YYYY
+    domains: [domain1, domain2]
+    status: incoming   # incoming | ingested | compiled
+```
 
 ## Open research questions
 
@@ -84,7 +132,7 @@ tags: [relevant tags]
 ## Research gaps
 
 Sources to ingest:
-- [ ] <URL or paper title> — why it's relevant
+- [ ] <author-keyword-year> — why it's relevant
 
 ## Audit backlog
 
@@ -99,11 +147,13 @@ Count of open audits per target (filled in after running `audit_review.py --open
 
 ## What makes a good schema
 
-**Good scope definition** prevents sprawl. A wiki about "LLM memory techniques" should exclude "LLM training" even though they're related.
+**Good scope definition** prevents sprawl. A wiki about "causal inference" should exclude "deep learning" even if some papers touch both.
 
-**Explicit naming conventions** keep wikilinks from breaking. If you decide concept pages use Title Case, enforce it — a broken wikilink is an orphan.
+**Explicit naming conventions** keep wikilinks from breaking. If you decide on kebab-case PCMT pages, enforce it — a broken wikilink is an orphan.
 
 **Maintained article list** lets the LLM know what already exists before creating a new page. The most common error is creating duplicate articles with slightly different names.
+
+**Papers registry** is the backbone for a 1000-paper wiki. It lets you query "what papers on causal inference have I ingested?" without traversing the whole wiki directory, and tracks whether each paper has been fully compiled into PCMT pages.
 
 **Open research questions** give the LLM direction. Without them, the LLM defaults to ingesting the most obvious sources and missing your actual questions.
 
@@ -111,9 +161,8 @@ Count of open audits per target (filled in after running `audit_review.py --open
 
 ## Update cadence
 
-- After every new concept page: add to "Current articles".
-- After every ingest batch: update "Sources to ingest" checklist.
+- After every new PCMT page: add to "Current articles" under the right section.
+- After every ingest: append entry to "Papers registry"; update "Sources to ingest" checklist.
 - After every lint pass: update "Research gaps".
 - After every audit pass: refresh the "Audit backlog" counts.
 - Monthly: review scope, prune stale research questions.
-
