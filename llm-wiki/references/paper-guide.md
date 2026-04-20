@@ -38,10 +38,10 @@ When given the ingest command, the agent will:
 
 1. Read the incoming markdown file
 2. Extract metadata (title, authors, year, venue, domains, slug)
-3. Write `raw/papers/<slug>.md` with a YAML front matter header
+3. Create `raw/papers/<slug>.md` by copying the **entire incoming markdown body** into the new file and prepending a YAML front matter header
 4. Delete the original file from `raw/incoming/`
 
-This rename is the **only** agent write allowed inside `raw/`. After `raw/papers/<slug>.md` is created, files under `raw/` are immutable and must not be edited in place.
+This copy-and-rename is the **only** agent write allowed inside `raw/`. During this step, the full incoming paper content must be preserved in `raw/papers/<slug>.md`; do not clean, summarize, or rewrite the paper body. After `raw/papers/<slug>.md` is created, files under `raw/` are immutable and must not be edited in place.
 
 Invocation forms:
 - `"ingest all the incoming papers"` — process every `.md` file in `raw/incoming/`

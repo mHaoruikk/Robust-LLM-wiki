@@ -49,12 +49,14 @@ The paper's specific estimator is described in the summary, not as a method page
 
 | Operation | What it does |
 |-----------|-------------|
-| `compile` | Restructure wiki — split oversized pages, merge duplicates, rebuild `index.md` |
-| `ingest` | Add a source — create summary + propose PCMT pages for approval + update index |
+| `compile` | Restructure wiki — split oversized pages, merge duplicates |
+| `ingest` | Add a source — create summary + propose PCMT pages for approval |
 | `query` | Answer a question grounded in the wiki; optionally promote durable answers |
-| `lint` | 8-pass health check: dead links, orphans, PCMT type integrity, audit shape, etc. |
+| `lint` | 8-pass health check: dead links, orphans, PCMT type integrity, stale index, audit shape |
 | `audit` | Process human feedback filed from Obsidian plugin or web viewer |
 | `brainstorm` | Traverse the knowledge graph from a seed to generate cross-domain research directions |
+
+> **Index note**: The agent never edits `wiki/index.md` directly. A git pre-commit hook runs `build_index.py` at commit time and regenerates the index automatically. See [Deterministic index builder](#deterministic-index-builder) below.
 
 ---
 
@@ -75,13 +77,20 @@ Then reference it in your agent config, or paste `llm-wiki/SKILL.md` into your a
 # 1. Scaffold a new wiki
 python3 llm-wiki/scripts/scaffold.py ~/my-wiki "Causal Inference"
 
-# 2. Convert a PDF to markdown yourself (any tool you prefer) and drop it in incoming/
+# 2. Initialize git and install the pre-commit hook (see full instructions below)
+cd ~/my-wiki
+git init && git add . && git commit -m "scaffold"
+ln -sf ../../.hooks/pre-commit .git/hooks/pre-commit   # Unix/macOS/Git Bash
+# Windows CMD alternative: copy .hooks\pre-commit .git\hooks\pre-commit
+
+# 3. Convert a PDF to markdown yourself (any tool you prefer) and drop it in incoming/
 cp athey2019_converted.md ~/my-wiki/raw/incoming/
 
-# 3. Tell your agent: "ingest all the incoming papers"
+# 4. Tell your agent: "ingest all the incoming papers"
 #    The agent extracts metadata, moves the file to raw/papers/<slug>.md,
 #    then creates the summary and proposes new PCMT pages;
 #    you approve before any new PCMT page is written.
+#    wiki/index.md is regenerated automatically when you commit.
 
 # 5. Ask questions
 #    "what does the wiki say about long-term treatment effects?"
@@ -99,16 +108,49 @@ python3 llm-wiki/scripts/audit_review.py ~/my-wiki --open
 
 ---
 
+---
+
+## Deterministic index builder
+
+`wiki/index.md` is a **generated artifact**, not a hand-maintained file. The agent reads it at session start but never writes to it directly. Instead, `llm-wiki/scripts/build_index.py` regenerates it deterministically from each page's frontmatter every time you commit.
+
+**Why this matters**: the previous pattern had the agent update `wiki/index.md` inline during every ingest and compile. This worked for simple cases but drifted on long multi-page operations — the agent would finish writing content and forget to add the new page to the index, or add it under the wrong domain section. By moving index maintenance to a commit-time script, the index is always exactly what the pages say it should be.
+
+**How it works:**
+
+1. You write and edit content pages normally.
+2. When you commit, the pre-commit hook at `.hooks/pre-commit` runs `build_index.py`.
+3. The script scans `wiki/`, reads frontmatter from every content page, and regenerates `wiki/index.md` with correct PCMT sections, domain groupings, folder-split hierarchies, and reverse-chronological summaries.
+4. The regenerated `wiki/index.md` is staged and included in the commit automatically.
+
+**Manual header is preserved**: the script preserves the H1 title line and the blockquote scope sentence at the top of `index.md` across rebuilds — those are the only two lines you ever edit by hand.
+
+**Open questions** moved to `wiki/open-questions.md`, a plain markdown file that the agent edits directly during ingest and audit operations.
+
+**Running the builder manually:**
+```bash
+# Regenerate index in place
+python3 llm-wiki/scripts/build_index.py <wiki-root>
+
+# Check whether the index is stale without writing (useful in CI)
+python3 llm-wiki/scripts/build_index.py <wiki-root> --check
+
+# Warn instead of fail on pages with missing frontmatter (migration run)
+python3 llm-wiki/scripts/build_index.py <wiki-root> --migrate
+```
+
+---
+
 ## Paper ingestion pipeline
 
 Convert PDFs to markdown yourself (using any tool you prefer), then drop the `.md` file into `raw/incoming/`. When you tell the agent to ingest, it will:
 
 1. **Extract metadata** — reads the markdown and extracts title, authors, year, venue, domains, and slug via Claude
-2. **Move** — writes `raw/papers/<slug>.md` with a YAML front matter header
+2. **Copy + rename** — creates `raw/papers/<slug>.md`, copies the complete incoming markdown into it, and adds a YAML front matter header
 3. **Clean up** — deletes the original file from `raw/incoming/`
 4. **Continue ingest** — creates the summary page and proposes new PCMT pages for your approval
 
-After the file is created in `raw/papers/`, it is treated as immutable source material. The agent must not modify files already under `raw/`.
+After the file is created in `raw/papers/`, it is treated as immutable source material. The agent must copy the full incoming paper content into `raw/papers/<slug>.md` and must not modify files already under `raw/` after that step.
 
 **Paper slug format:** `{first-author-lastname}-{core-keyword(s)}-{year}` — e.g., `vaswani-attention-2017`, `chernozhukov-double-debiased-ml-2018`.
 
@@ -118,6 +160,8 @@ After the file is created in `raw/papers/`, it is treated as immutable source ma
 
 ```
 llm-wiki-skill/
+├── .hooks/
+│   └── pre-commit               ← Git hook — runs build_index.py at commit time
 ├── llm-wiki/                    ← The skill
 │   ├── SKILL.md                 ← Main skill file (read by agent)
 │   ├── references/
@@ -130,7 +174,8 @@ llm-wiki-skill/
 │   │   └── tooling-tips.md      ← Obsidian, qmd, plugin + web setup
 │   └── scripts/
 │       ├── scaffold.py          ← Bootstrap new wiki directory (PCMT layout)
-│       ├── lint_wiki.py         ← 8-pass health check (links, PCMT types, audit, log)
+│       ├── build_index.py       ← Deterministic wiki/index.md generator
+│       ├── lint_wiki.py         ← 8-pass health check (links, PCMT types, stale index, audit, log)
 │       └── audit_review.py      ← Group open/resolved audits by target
 ├── audit-shared/                ← Shared TypeScript library
 │   └── src/{schema,anchor,id,serialize,index}.ts

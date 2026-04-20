@@ -62,7 +62,7 @@ If a page **would** exceed ~1200 words, do not write it as a single file. Split 
    - [[summaries/...]]
    ```
 3. Write each `<aspect-N>.md` as a focused 400–1200 word page.
-4. Update `wiki/index.md` to show the hierarchy with indented bullets under the folder-split entry.
+4. Do NOT edit `wiki/index.md` — use the `build-index` command to regenerate the index hierarchy.
 
 Signs a page needs to be split:
 - Word count creeping past 1000.

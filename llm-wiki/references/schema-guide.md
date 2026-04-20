@@ -102,11 +102,11 @@ tags: [relevant tags]
 #### <domain-a>
 - [[theory/<domain-a>/<slug>]] — one-line summary
 
-### Entities
-- [[entities/<Name>]] — one-line summary
-
 ### Summaries
 - [[summaries/<slug>]] — source title (year)
+
+### Entities
+- [[entities/<Name>]] — one-line summary
 
 ## Papers registry
 

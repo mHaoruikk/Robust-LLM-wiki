@@ -11,7 +11,7 @@ Example:
 Checks:
   1. Dead wikilinks — [[Target]] where Target.md doesn't exist
   2. Orphan pages — wiki pages with no inbound links
-  3. Missing index entries — wiki pages not listed in wiki/index.md
+  3. Stale index — wiki/index.md is out of sync with content pages (via build_index.py --check)
   4. Unlinked concepts — terms mentioned 3+ times but lacking their own page
   5. PCMT type integrity — every wiki page has a valid `type` in frontmatter
   6. log/ shape — every file matches YYYYMMDD.md and has the right H1
@@ -25,6 +25,7 @@ Exit codes:
 
 import os
 import re
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -57,13 +58,48 @@ VALID_STATUSES = {"open", "resolved"}
 VALID_SOURCES = {"obsidian-plugin", "web-viewer", "manual"}
 
 
-def load_pages(wiki_dir: Path) -> dict[str, Path]:
-    pages: dict[str, Path] = {}
+def load_pages(wiki_dir: Path) -> tuple[dict[str, Path], dict[str, list[str]]]:
+    """
+    Returns:
+      pages_by_rel  — {rel_posix_without_ext: abs_path}   primary lookup
+      pages_by_stem — {stem: [rel1, rel2, ...]}            ambiguity detection
+    Keying by full relative path (not just stem) prevents false matches when two
+    pages share the same filename in different domains or type directories.
+    """
+    pages_by_rel: dict[str, Path] = {}
+    pages_by_stem: dict[str, list[str]] = {}
     for p in wiki_dir.rglob("*.md"):
-        pages[p.stem] = p
-        rel = p.relative_to(wiki_dir)
-        pages[str(rel.with_suffix(""))] = p
-    return pages
+        rel = p.relative_to(wiki_dir).with_suffix("").as_posix()
+        pages_by_rel[rel] = p
+        pages_by_stem.setdefault(p.stem, []).append(rel)
+    return pages_by_rel, pages_by_stem
+
+
+def resolve_wikilink(
+    link: str,
+    pages_by_rel: dict[str, Path],
+    pages_by_stem: dict[str, list[str]],
+) -> tuple[str | None, bool]:
+    """
+    Resolve a raw wikilink target to a canonical rel path.
+
+    Returns (canonical_rel, is_ambiguous):
+      - canonical_rel is the resolved rel path, or None if unresolvable.
+      - is_ambiguous is True when a bare stem matches multiple pages in different
+        directories. Ambiguous links are reported separately from dead links.
+    """
+    link = link.strip()
+    # Full relative-path match (the preferred wikilink form)
+    if link in pages_by_rel:
+        return link, False
+    # Bare stem or partial path: find all matches by stem
+    stem = Path(link).stem
+    matches = pages_by_stem.get(stem, [])
+    if len(matches) == 1:
+        return matches[0], False
+    if len(matches) > 1:
+        return None, True  # ambiguous — don't silently pick one
+    return None, False  # dead link
 
 
 def extract_wikilinks(text: str) -> list[str]:
@@ -127,25 +163,30 @@ def lint(root: str) -> int:
         print(f"ERROR: wiki/ directory not found at {wiki_path}", file=sys.stderr)
         return 1
 
-    pages = load_pages(wiki_path)
+    pages_by_rel, pages_by_stem = load_pages(wiki_path)
     all_wiki_files = list(wiki_path.rglob("*.md"))
     index_path = wiki_path / "index.md"
 
     issues = 0
+    # inbound: {canonical_rel: [source_rel, ...]} — keyed by full rel path
     inbound: dict[str, list[str]] = defaultdict(list)
 
     # ── Pass 1: dead wikilinks ──────────────────────────────────────────────
     dead_links: list[tuple[str, str]] = []
+    ambiguous_links: list[tuple[str, str, list[str]]] = []
     for md_file in all_wiki_files:
+        source_rel = md_file.relative_to(wiki_path).with_suffix("").as_posix()
         text = md_file.read_text(encoding="utf-8")
         for link in extract_wikilinks(text):
-            link = link.strip()
-            if link not in pages and Path(link).stem not in pages:
-                dead_links.append((str(md_file.relative_to(root_path)), link))
+            canonical, is_ambiguous = resolve_wikilink(link, pages_by_rel, pages_by_stem)
+            if is_ambiguous:
+                stem = Path(link.strip()).stem
+                candidates = pages_by_stem.get(stem, [])
+                ambiguous_links.append((str(md_file.relative_to(root_path)), link.strip(), candidates))
+            elif canonical is None:
+                dead_links.append((str(md_file.relative_to(root_path)), link.strip()))
             else:
-                target = pages.get(link) or pages.get(Path(link).stem)
-                if target:
-                    inbound[target.stem].append(md_file.stem)
+                inbound[canonical].append(source_rel)
 
     if dead_links:
         print(f"\n🔴 Dead wikilinks ({len(dead_links)}):")
@@ -155,13 +196,26 @@ def lint(root: str) -> int:
     else:
         print("✅ No dead wikilinks")
 
+    if ambiguous_links:
+        print(f"\n🟡 Ambiguous bare-stem wikilinks ({len(ambiguous_links)}) — use full relative paths:")
+        for source, link, candidates in ambiguous_links:
+            print(f"   {source} → [[{link}]]  matches: {', '.join(candidates)}")
+        issues += len(ambiguous_links)
+
     # ── Pass 2: orphan pages ────────────────────────────────────────────────
-    skip_orphan = {"index"}
-    orphans = [
-        p for p in all_wiki_files
-        if p.stem not in inbound and p.stem not in skip_orphan
-        and p.parent != wiki_path  # skip index.md at root
-    ]
+    # Skip root-level generated/special files; skip folder-split index.md files
+    # (their stem is "index" — they may not be cross-linked in body text even
+    # though wiki/index.md links to them, and that is acceptable).
+    SKIP_ORPHAN_STEMS = {"index", "open-questions"}
+    orphans = []
+    for p in all_wiki_files:
+        if p.parent == wiki_path:
+            continue  # wiki/index.md, wiki/open-questions.md
+        if p.stem in SKIP_ORPHAN_STEMS:
+            continue  # folder-split index.md files
+        rel = p.relative_to(wiki_path).with_suffix("").as_posix()
+        if rel not in inbound:
+            orphans.append(p)
     if orphans:
         print(f"\n🟡 Orphan pages ({len(orphans)}) — no inbound wikilinks:")
         for p in orphans:
@@ -170,24 +224,28 @@ def lint(root: str) -> int:
     else:
         print("✅ No orphan pages")
 
-    # ── Pass 3: missing index entries ───────────────────────────────────────
-    if index_path.exists():
-        index_text = index_path.read_text(encoding="utf-8")
-        not_in_index = [
-            p for p in all_wiki_files
-            if p != index_path
-            and f"[[{p.stem}]]" not in index_text
-            and str(p.relative_to(wiki_path).with_suffix("")) not in index_text
-        ]
-        if not_in_index:
-            print(f"\n🟡 Pages missing from index.md ({len(not_in_index)}):")
-            for p in not_in_index:
-                print(f"   {p.relative_to(root_path)}")
-            issues += len(not_in_index)
-        else:
-            print("✅ All pages in index.md")
+    # ── Pass 3: stale index (via build_index.py --check) ───────────────────
+    # wiki/index.md is a generated artifact; this pass verifies it matches
+    # what build_index.py would produce from current page frontmatter.
+    builder = Path(__file__).parent / "build_index.py"
+    if not builder.exists():
+        print("⚠️  build_index.py not found — skipping index freshness check")
+    elif not index_path.exists():
+        print("🔴 wiki/index.md not found — run build_index.py to create it")
+        issues += 1
     else:
-        print("⚠️  wiki/index.md not found — skipping index check")
+        result = subprocess.run(
+            [sys.executable, str(builder), root, "--check"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            print("✅ wiki/index.md is up-to-date")
+        else:
+            msg = (result.stdout or result.stderr or "index is stale").strip()
+            print(f"\n🔴 wiki/index.md is stale: {msg}")
+            print("   Run: python3 llm-wiki/scripts/build_index.py <wiki-root>")
+            issues += 1
 
     # ── Pass 4: unlinked concepts ───────────────────────────────────────────
     all_text = " ".join(p.read_text(encoding="utf-8") for p in all_wiki_files)
@@ -198,7 +256,8 @@ def lint(root: str) -> int:
 
     missing_pages = [
         (link, count) for link, count in link_counts.items()
-        if count >= 3 and link not in pages and Path(link).stem not in pages
+        if count >= 3
+        and resolve_wikilink(link, pages_by_rel, pages_by_stem) == (None, False)
     ]
     if missing_pages:
         print(f"\n🟡 Frequently linked but no page ({len(missing_pages)}):")
