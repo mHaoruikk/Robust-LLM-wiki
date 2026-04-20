@@ -5,7 +5,7 @@
 > Experimental skill — will iterate over time.
 > Please send your feedback in GitHub issues.
 
-Inspired by [Andrej Karpathy's llm-wiki Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the community's work building on it.
+Maintained by **mHaoruiKK** (mhr_kura@outlook.com). Built upon the initial implementation by **Lewis Liu** (lylewis@outlook.com). Inspired by [Andrej Karpathy's llm-wiki Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) and the community's work building on it.
 
 ## What this is
 

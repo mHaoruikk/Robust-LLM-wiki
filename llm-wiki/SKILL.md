@@ -20,7 +20,7 @@ description: >-
 # LLM Wiki — Karpathy Knowledge Base Pattern
 
 > **Experimental skill — iterating.**
-> Authored by Lewis Liu (lylewis@outlook.com) · Inspired by [Karpathy's llm-wiki Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
+> Authored by mHaoruiKK (mhr_kura@outlook.com) · Inspired by [Karpathy's llm-wiki Gist](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f)
 
 ## Core idea
 

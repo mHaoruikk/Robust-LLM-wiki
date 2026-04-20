@@ -33,7 +33,7 @@ anchor_before: "## 技术概览\n\n| 维度 | 详情 |\n|------|------|\n"
 anchor_text: "| **规模** | ~1,900 个文件，512,000+ 行代码 |"
 anchor_after: "\n| **语言** | TypeScript（strict 模式） |"
 severity: warn
-author: lewis
+author: mHaoruiKK
 source: manual
 created: 2026-04-09T14:30:22+08:00
 status: open
