@@ -1,10 +1,10 @@
 # Audit Guide — human feedback on wiki content
 
-The `audit/` directory is the human feedback surface. One file per feedback, YAML frontmatter + markdown body. Feedback is produced by the Obsidian plugin or the web viewer and **consumed by the AI during the `audit` operation**.
+The `audit/` directory is the human feedback surface. One file per feedback, YAML frontmatter + markdown body. Feedback is hand-written by the user and **consumed by the AI during the `audit` operation**.
 
 ## Why it exists
 
-AI-written content is wrong sometimes. Raw sources contradict each other. Feedback in chat is lost the moment the conversation ends. The audit directory gives corrections a permanent, location-anchored home that every tool (Obsidian plugin, web viewer, AI, lint script) understands.
+AI-written content is wrong sometimes. Raw sources contradict each other. Feedback in chat is lost the moment the conversation ends. The audit directory gives corrections a permanent, location-anchored home that the AI and lint script both understand.
 
 ## Directory layout
 
@@ -34,7 +34,7 @@ anchor_text: "| **规模** | ~1,900 个文件，512,000+ 行代码 |"
 anchor_after: "\n| **语言** | TypeScript（strict 模式） |"
 severity: warn
 author: lewis
-source: obsidian-plugin
+source: manual
 created: 2026-04-09T14:30:22+08:00
 status: open
 ---
@@ -60,8 +60,8 @@ status: open
 | `anchor_text` | string | yes | The exact selected text. Verbatim. |
 | `anchor_after` | string | yes | Up to ~80 chars of text immediately after the selection. Verbatim. |
 | `severity` | enum | yes | One of `info`, `suggest`, `warn`, `error`. |
-| `author` | string | yes | Free text. The Obsidian plugin defaults to the OS username; the web viewer has a config. |
-| `source` | enum | yes | One of `obsidian-plugin`, `web-viewer`, `manual`. |
+| `author` | string | yes | Free text — your name or handle. |
+| `source` | enum | yes | Typically `manual` (hand-written). |
 | `created` | ISO 8601 | yes | Timestamp with timezone. |
 | `status` | enum | yes | `open` for files in `audit/`, `resolved` for files in `audit/resolved/`. |
 
@@ -78,19 +78,17 @@ The AI should process `error` and `warn` first, then `suggest`, then `info`.
 
 Line numbers alone are fragile — any edit earlier in the file invalidates them. So every audit file carries a **text-based anchor window** alongside the line numbers.
 
-On write (Obsidian plugin / web viewer):
-1. Capture `target_lines` from the selection range.
-2. Extract `anchor_text` = the exact selected characters.
-3. Extract `anchor_before` = up to 80 characters immediately before the selection start (clamped to start of file).
-4. Extract `anchor_after` = up to 80 characters immediately after the selection end (clamped to end of file).
+On write (by hand):
+1. Record `target_lines` from the selection range.
+2. Copy `anchor_text` = the exact selected characters.
+3. Copy `anchor_before` = up to 80 characters immediately before the selection start (clamped to start of file).
+4. Copy `anchor_after` = up to 80 characters immediately after the selection end (clamped to end of file).
 
-On read (AI during `audit`, audit_review.py, both tools):
+On read (AI during `audit`, or audit_review.py):
 1. Try `target_lines` — check whether the text in that line range contains `anchor_text`.
 2. If not, search the whole file for `anchor_text`. If exactly one match, use it.
 3. If multiple matches, use `anchor_before + anchor_text + anchor_after` as a combined search key.
 4. If still no match, the anchor is **stale** — flag to the user during the `audit` op. Do not silently drop; ask whether to re-anchor, reject, or archive.
-
-This algorithm lives in `audit-shared/src/anchor.ts` and is the single source of truth for all tools.
 
 ## Processing workflow (the `audit` op)
 
@@ -130,7 +128,4 @@ For `rejected` audits: explain **why** — most often "out of scope per CLAUDE.m
 
 - **`scripts/lint_wiki.py`** validates audit file shape and that every `target` file exists.
 - **`scripts/audit_review.py`** lists and groups audits.
-- **`plugins/obsidian-audit/`** writes audit files from inside Obsidian on selection.
-- **`web/`** writes audit files from the local web viewer on selection.
-- **`audit-shared/`** — TypeScript library implementing the schema, anchor algorithm, id generator, and YAML (de)serialization used by the plugin and the web server.
 

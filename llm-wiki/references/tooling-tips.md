@@ -12,7 +12,6 @@ Practical setup and usage notes for the LLM Wiki stack.
 
 ### Plugins to install
 
-- **`plugins/obsidian-audit/`** (this repo) — select text → add feedback → writes to `audit/`. See "Audit plugin" section below.
 - **Obsidian Web Clipper** (browser extension) — converts any webpage to Markdown and saves to your vault. Configure to save to `raw/articles/`.
 - **Dataview** (optional) — query frontmatter fields; build dynamic tables of articles by tag, date, source count.
 - **Marp** (optional) — render wiki content as slide decks directly from Obsidian.
@@ -24,51 +23,14 @@ Graph view (`Ctrl+G`) is the best way to see your wiki's shape:
 - Isolated node = orphan page (needs inbound links or removal). `lint_wiki.py` flags these.
 - Cluster = a sub-topic worth a dedicated folder-split under `wiki/concepts/`.
 
-## Audit plugin — `plugins/obsidian-audit/`
+## Filing audit feedback by hand
 
-Installs into a local Obsidian vault. Workflow:
+Audit files are plain markdown with YAML frontmatter, written by hand under `<wiki-root>/audit/`. See `audit-guide.md` for the exact schema (filename format, required fields, anchor strategy).
 
-1. Build the plugin once:
-   ```bash
-   cd plugins/obsidian-audit
-   npm install
-   npm run build
-   ```
-2. Symlink (or copy) the plugin folder into your vault:
-   ```bash
-   npm run link -- "/path/to/your/vault"
-   ```
-3. In Obsidian, enable Community Plugins, then enable "LLM Wiki Audit".
-4. In the plugin settings, set:
-   - **Wiki root** — path relative to the vault root (usually `.`).
-   - **Audit directory** — path relative to the wiki root (default `audit`).
-   - **Author** — your name.
-
-Commands (bind to hotkeys if you like):
-- **`Audit: Add feedback on selection`** — opens a modal with severity + comment → writes an audit file.
-- **`Audit: List open feedback for current file`** — shows a notice summarising open audits targeting the current file.
-- **`Audit: Open audit folder`** — reveals `audit/` in the file explorer.
-
-The plugin uses the shared `audit-shared` library, so files it writes are byte-identical in shape to files the web viewer writes.
-
-## Web viewer — `web/`
-
-Local Node.js server that renders the wiki with mermaid, KaTeX, and wikilinks, and lets you file feedback from your browser.
-
-```bash
-cd web
-npm install
-npm run build
-npm start -- --wiki "/path/to/wiki-root" --port 4175
-```
-
-Then open `http://127.0.0.1:4175`. Features:
-- Left sidebar: navigation tree built from `wiki/index.md`.
-- Main pane: rendered markdown, mermaid diagrams rendered client-side, formulas rendered server-side.
-- Right sidebar: list of open audits for the current page.
-- Select any text → "💬 Add feedback" popover appears → submit → writes an audit file to `<wiki-root>/audit/`.
-
-The server binds to `127.0.0.1` only. No auth; intended for personal use on your own machine.
+Quick workflow:
+1. Find the target page and copy the problematic text as `anchor_text`, plus up to 80 chars of `anchor_before` / `anchor_after` context.
+2. Create a new file: `audit/YYYYMMDD-HHMMSS-<slug>.md` with the frontmatter and a `# Comment` section describing the issue.
+3. Tell the agent: `"audit: process the open comments"`.
 
 ## Obsidian Web Clipper usage
 

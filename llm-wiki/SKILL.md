@@ -159,7 +159,7 @@ This keeps the wiki repo git-friendly and portable.
 
 The wiki is AI-written; it will be wrong sometimes. The raw sources are human-written; they will contradict each other. The `audit/` directory is how humans correct both without losing the corrections in chat history.
 
-- Humans file feedback via the Obsidian plugin or the web viewer. Each feedback is one file in `audit/` with YAML frontmatter (anchor, target, severity) and a markdown body.
+- Humans file feedback by hand-writing a file in `audit/` with YAML frontmatter (anchor, target, severity) and a markdown body. See `references/audit-guide.md` for the file format.
 - The AI **must** periodically run the `audit` op — never silently ignore `audit/*.md` files.
 - When feedback is applied, the file moves to `audit/resolved/` with a `# Resolution` section appended and a log entry recorded in `log/YYYYMMDD.md`.
 
@@ -344,15 +344,11 @@ Regenerate `wiki/index.md` from page frontmatter.
 | Tool | Purpose |
 |------|---------|
 | [Obsidian](https://obsidian.md) | IDE for browsing the wiki; graph view shows connections |
-| **`plugins/obsidian-audit/`** | Obsidian plugin — select text → add feedback → writes to `audit/` |
-| **`web/`** | Local Node.js server — preview the wiki with mermaid/math rendered; select → feedback → `audit/` |
 | `llm-wiki/scripts/scaffold.py` | Bootstrap a new wiki directory tree |
 | `llm-wiki/scripts/build_index.py` | Regenerate `wiki/index.md` deterministically from page frontmatter |
 | `llm-wiki/scripts/lint_wiki.py` | Eight-pass health check (pass 3 checks index freshness via builder) |
 | `llm-wiki/scripts/audit_review.py` | Group open/resolved audits by target file |
 | [qmd](https://github.com/tobi/qmd) | Optional local semantic search (useful at >100 pages) |
-
-The Obsidian plugin and the web viewer both write audit files in the **same format** with **the same anchor algorithm**, so feedback filed from either place can be resolved by either place.
 
 ## Starting a new wiki
 
