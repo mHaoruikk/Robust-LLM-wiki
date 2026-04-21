@@ -20,3 +20,5 @@ web/dist/
 obsidian-releases/
 
 /.claude/*
+
+llm-wiki/scripts/__pycache__/
