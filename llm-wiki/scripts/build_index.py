@@ -54,6 +54,9 @@ REQUIRED_FLAT = {"type"}  # entities and summaries
 # Everything before this in index.md is the preserved manual header.
 NAV_SENTINEL = "## 🔖 Navigation"
 
+#Maximal character count for extract_oneliner
+ONE_LINER_MAX = 300
+
 
 # ── data model ────────────────────────────────────────────────────────────────
 
@@ -128,14 +131,14 @@ def extract_oneliner(abs_path: Path, is_summary: bool) -> str:
         for line in body.splitlines():
             stripped = line.strip()
             if stripped.startswith("# "):
-                return stripped[2:].strip()[:120]
+                return stripped[2:].strip()[:ONE_LINER_MAX]
         return abs_path.stem  # fallback: slug
     # Non-summary: first non-heading, non-empty line
     for line in body.splitlines():
         stripped = line.strip()
         if stripped and not stripped.startswith("#"):
-            result = stripped[:120]
-            if len(stripped) > 120:
+            result = stripped[:ONE_LINER_MAX]
+            if len(stripped) > ONE_LINER_MAX:
                 result += "…"
             return result
     return ""
