@@ -90,7 +90,7 @@ What this wiki deliberately excludes:
 
 ## Operations
 
-This wiki follows the llm-wiki skill's six operations: `compile`, `ingest`, `query`, `lint`, `audit`, `brainstorm`.
+This wiki follows the llm-wiki skill's seven operations: `compile`, `ingest`, `query`, `lint`, `audit`, `brainstorm`, `build-index`.
 Every operation appends an entry to `log/YYYYMMDD.md`.
 
 ## Naming conventions (PCMT ontology)
@@ -124,26 +124,6 @@ All pages require YAML frontmatter: `title`, `type`, `domain`, `created`, `updat
 - PDFs → convert to markdown yourself, drop in `raw/incoming/`, then run ingest → `raw/papers/<slug>.md`.
 - Large binaries / PDFs >10 MB → create a pointer file at `raw/refs/<slug>.md` with `kind: ref`
   and `external_path` fields. Do not copy the binary.
-
-## Current articles
-
-### Problems
-*(none)*
-
-### Concepts
-*(none)*
-
-### Methods
-*(none)*
-
-### Theory
-*(none)*
-
-### Entities
-*(none)*
-
-### Summaries
-*(none)*
 
 ## Papers registry
 

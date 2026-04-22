@@ -77,37 +77,6 @@ tags: [relevant tags]
 - Large binaries / PDFs >10 MB → create a pointer file at `raw/refs/<slug>.md` with `kind: ref`
   frontmatter and an `external_path` field. Do not copy the binary.
 
-## Current articles
-
-### Problems
-*(none — update after each ingest)*
-
-#### <domain-a>
-- [[problems/<domain-a>/<slug>]] — one-line summary
-
-### Concepts
-
-#### <domain-a>
-- [[concepts/<domain-a>/<slug>]] — one-line summary
-- [[concepts/<domain-a>/<topic>/index|<topic>]] — (folder-split) one-line summary
-    - [[concepts/<domain-a>/<topic>/<aspect>]] — ...
-
-### Methods
-
-#### <domain-a>
-- [[methods/<domain-a>/<slug>]] — one-line summary
-
-### Theory
-
-#### <domain-a>
-- [[theory/<domain-a>/<slug>]] — one-line summary
-
-### Summaries
-- [[summaries/<slug>]] — source title (year)
-
-### Entities
-- [[entities/<Name>]] — one-line summary
-
 ## Papers registry
 
 Track every ingested academic paper here. Update `status` as work progresses.
@@ -151,8 +120,6 @@ Count of open audits per target (filled in after running `audit_review.py --open
 
 **Explicit naming conventions** keep wikilinks from breaking. If you decide on kebab-case PCMT pages, enforce it — a broken wikilink is an orphan.
 
-**Maintained article list** lets the LLM know what already exists before creating a new page. The most common error is creating duplicate articles with slightly different names.
-
 **Papers registry** is the backbone for a 1000-paper wiki. It lets you query "what papers on causal inference have I ingested?" without traversing the whole wiki directory, and tracks whether each paper has been fully compiled into PCMT pages.
 
 **Open research questions** give the LLM direction. Without them, the LLM defaults to ingesting the most obvious sources and missing your actual questions.
@@ -161,7 +128,6 @@ Count of open audits per target (filled in after running `audit_review.py --open
 
 ## Update cadence
 
-- After every new PCMT page: add to "Current articles" under the right section.
 - After every ingest: append entry to "Papers registry"; update "Sources to ingest" checklist.
 - After every lint pass: update "Research gaps".
 - After every audit pass: refresh the "Audit backlog" counts.

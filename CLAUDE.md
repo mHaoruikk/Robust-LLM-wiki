@@ -49,70 +49,14 @@ All pages require YAML frontmatter: `title`, `type`, `domain`, `created`, `updat
 - Large binaries / PDFs >10 MB → create a pointer file at `raw/refs/<slug>.md` with `kind: ref`
   and `external_path` fields. Do not copy the binary.
 
-## Current articles
-
-### Problems
-- `problems/causal-inference/efficient-nonparametric-functional-estimation`
-- `problems/llm-evaluation/ranking-from-preference-data`
-
-### Concepts
-- `concepts/statistics/efficient-influence-function`
-- `concepts/statistics/von-mises-expansion`
-- `concepts/statistics/cramer-rao-bound`
-- `concepts/llm-evaluation/generalized-average-ranking-score`
-- `concepts/llm-evaluation/bradley-terry-model`
-- `concepts/llm-evaluation/rank-centrality`
-
-### Methods
-- `methods/statistics/one-step-estimator`
-- `methods/statistics/cross-fitting`
-- `methods/statistics/influence-function-calculus`
-- `methods/llm-evaluation/dml-rank`
-- `methods/llm-evaluation/optimal-preference-acquisition`
-
-### Theory
-- `theory/statistics/nonparametric-efficiency-bound`
-- `theory/statistics/pathwise-differentiability`
-- `theory/statistics/remainder-term-analysis-eif-based-estimator`
-- `theory/llm-evaluation/gars-efficient-influence-function`
-
-### Entities
-- `entities/Edward-Kennedy`
-- `entities/Dennis-Frauen`
-- `entities/Athiya-Deviyani`
-- `entities/Mihaela-van-der-Schaar`
-- `entities/Stefan-Feuerriegel`
-
-### Summaries
-- `summaries/kennedy-semiparametric-doubly-robust-2023`
-- `summaries/frauen-nonparametric-llm-evaluation-2026`
-
-## Papers registry
-
-```yaml
-papers:
-  - slug: kennedy-semiparametric-doubly-robust-2023
-    title: "Semiparametric Doubly Robust Targeted Double Machine Learning: A Review"
-    authors: [Edward H. Kennedy]
-    venue: arXiv / review
-    year: 2023
-    domains: [causal-inference, statistics]
-    status: ingested
-  - slug: frauen-nonparametric-llm-evaluation-2026
-    title: "Nonparametric LLM Evaluation from Preference Data"
-    authors: [Dennis Frauen, Athiya Deviyani, Mihaela van der Schaar, Stefan Feuerriegel]
-    venue: arXiv
-    year: 2026
-    domains: [llm-evaluation, causal-inference, statistics]
-    status: ingested
-```
-
 ## Open research questions
-
-- <What do you want to understand better?>
-- <What are the key open questions in this domain?>
+- How should we perform LLM routing with pairwise comparison data?
+- How could we develop principled way to evaluate the LLM agents?
+- How should we do a hierarchical PPI for longitudinal outcome prediction? 
 
 ## Research gaps
+- No works has proposed policy learning with preference data under **partial identification / uncertainty**. Partial identification is a causality-related term, could be due to unmeasured confounding. Uncertainity is a more general way of stating that the pairwise win-rate is not point-estimable.
+- Current PPI is not multi-step, it does **NOT** address the outcome estimation with **sequential actions**, i.e. the time-varying confounding problem which means the future time-varying covariates become a unseen confounder for the final outcome.
 
 Sources to ingest:
 - [ ] <author-keyword-year or URL> — why it's relevant
