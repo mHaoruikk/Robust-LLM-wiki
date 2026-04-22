@@ -8,8 +8,10 @@
 What this wiki covers:
 - causal machine learning
 - statistical inference
-- decision making, reinforcement learning
+- off-policy learning, decision making, reinforcement learning
 - LLMs and Agents
+- Combination of Causal Machine learning with LLMs or Agents 
+- General Machine learning
 
 
 ## Operations
