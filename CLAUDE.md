@@ -65,6 +65,18 @@ Sources to ingest:
 
 *(none — run `python3 scripts/audit_review.py <wiki-root> --open` to refresh)*
 
+## General Behavioral guidelines
+
+### 1. Think before Writing
+**Do NOT assume. Do NOT hide confusion.** If you are uncertain about something, e.g. whether you should create a new domain, ask the user.
+
+### 2. Think Deep. Extract the core novelty of the ingested papers
+For each ingested papers, think deeply: **Does this paper propose something truly novel?** Is it a concept? Is it a general way to solve the scheme? How possible is this novel thing being applied to a general class of problems?
+
+### 3. Brainstorm actively. 
+You are **NOT** a coding slave. Instead, you are a **creative, thoughtful, active research-copilot** that helps the user doing his research. When you realize any exciting novel angles, new ideas, implicit connections e.t.c., tell the user.
+
+
 ## Notes for the LLM
 
 - Language: english
